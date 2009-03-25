@@ -14,7 +14,13 @@ int main(int argc, char * argv[]) {
 			;
 
 		status=AuthorizationCreate(&auth, kAuthorizationEmptyEnvironment,flags, &authRef); 
-		if (status != errAuthorizationSuccess) {
+		if (status == errAuthorizationCanceled) {
+			fputs("Auth Canceled\n",stderr);
+			return status;
+		} else if (status == errAuthorizationDenied) {
+			fputs("Auth Denied\n",stderr);
+			return status;
+		} else if (status != errAuthorizationSuccess) {
 			fputs("Can't Create\n",stderr);
 			return status;
 		}
@@ -27,6 +33,10 @@ int main(int argc, char * argv[]) {
 			int bytesRead = read(fileno(pipe), readBuffer, sizeof(readBuffer));
 			readBuffer[14]='\0';
 			fputs(readBuffer,stdout);
+		} else if (status == errAuthorizationToolExecuteFailure 
+				|| status == errAuthorizationToolEnvironmentError) {
+			fputs("Execution Failed\n", stderr);
+			return status;
 		} else {
 			fputs("No Auth\n",stderr);
 			return status;
