@@ -5,6 +5,7 @@ int main(int argc, char * argv[]) {
 	OSStatus status;
 	AuthorizationRef authRef;
 	{
+		char prompt[] = "On behalf of MarketForce,";
 		AuthorizationItem items = {kAuthorizationRightExecute, 0, NULL, 0};
 		AuthorizationRights auth={1, &items};
 		AuthorizationFlags flags=
@@ -12,8 +13,10 @@ int main(int argc, char * argv[]) {
 			| kAuthorizationFlagInteractionAllowed  
 			| kAuthorizationFlagExtendRights 
 			;
+		AuthorizationItem envItems = {kAuthorizationEnvironmentPrompt, sizeof(prompt), prompt, 0};
+		AuthorizationEnvironment env = {1, &envItems};
 
-		status=AuthorizationCreate(&auth, kAuthorizationEmptyEnvironment,flags, &authRef); 
+		status=AuthorizationCreate(&auth, &env,flags, &authRef); 
 		if (status == errAuthorizationCanceled) {
 			fputs("Auth Canceled\n",stderr);
 			return status;
