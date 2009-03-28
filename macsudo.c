@@ -1,9 +1,6 @@
 #include <Security/Authorization.h>
 #include <Security/AuthorizationTags.h>
  
-int read (long,StringPtr,int);
-int write (long,StringPtr,int);
- 
 int main(int argc, char **argv) {
  
 	OSStatus myStatus;
