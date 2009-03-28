@@ -1,5 +1,6 @@
 #include <Security/Authorization.h>
 #include <Security/AuthorizationTags.h>
+#include <stdlib.h>
  
 int main(int argc, char **argv) {
  
@@ -7,6 +8,11 @@ int main(int argc, char **argv) {
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
  
+	if (argc <= 1) {
+		fputs("No command given.\n",stderr);
+		return EXIT_FAILURE;
+	}
+
 	myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
 	if (myStatus != errAuthorizationSuccess) return myStatus;
  
@@ -25,8 +31,8 @@ int main(int argc, char **argv) {
 		if (myStatus != errAuthorizationSuccess) break;
  
 		{
-			char myToolPath[] = "/usr/bin/id";
-			char *myArguments[] = { "-un", NULL };
+			char myToolPath[] = "/bin/sh";
+			char *myArguments[] = {"-c", argv[1], NULL };
 			FILE *myCommunicationsPipe = NULL;
 			char myReadBuffer[128];
  
@@ -44,7 +50,7 @@ int main(int argc, char **argv) {
 	} while (0);
  
 	AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
- 
+
 	if (myStatus) printf("Status: %ld\n", myStatus);
 	return myStatus;
 }
