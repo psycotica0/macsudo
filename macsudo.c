@@ -1,6 +1,44 @@
 #include <Security/Authorization.h>
 #include <Security/AuthorizationTags.h>
 #include <stdlib.h>
+#include <string.h>
+
+/*
+This function takes in an array of strings and joins them all into a single string.
+
+It assumes the input char is argv-like, in that the last element in it is NULL
+It allocates the space it needs.
+This should be freed manually by the caller.
+*/
+char* argvJoin(char** input) {
+	int requiredSize=0;
+	char* output;
+	int i;
+
+	//Find the required size of the output
+	for(i=0; input[i]!=NULL; i++) {
+		//Add the size of the string plus 1 for the space we'll be using to join them.
+		requiredSize += strlen(input[i]) + 1;
+	}
+
+	//Account for the null character
+	requiredSize += 1;
+
+	//Allocate the string
+	output=malloc(sizeof(char) * requiredSize);
+	if (output == NULL) {
+		return NULL;
+	}
+	output[0]=NULL;
+
+	//Now, fill in the values
+	for(i=0; input[i]!=NULL; i++) {
+		strcat(output, input[i]);
+		strcat(output, " ");
+	}
+
+	return output;
+}
  
 int main(int argc, char **argv) {
  
