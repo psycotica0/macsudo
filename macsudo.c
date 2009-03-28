@@ -4,6 +4,24 @@
 #include <string.h>
 
 /*
+This function counts the number of times a certain character occurs in a string
+*/
+int charCount(char* string, char toCount) {
+	int num=0;
+	char *pos=string;
+	while (1) {
+		pos=strchr(pos+1, toCount);
+		if (pos == NULL) {
+			break;
+		} else {
+			num++;
+		}
+	}
+
+	return num;
+}
+
+/*
 This function takes in an array of strings and joins them all into a single string.
 
 It assumes the input char is argv-like, in that the last element in it is NULL
