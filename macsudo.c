@@ -1,50 +1,61 @@
-#include <Authorization.h>
-#include <AuthorizationTags.h>
-
-int main(int argc, char * argv[]) {
-	OSStatus status;
-	AuthorizationRef authRef;
-	{
-		char prompt[] = "On behalf of MarketForce,";
-		AuthorizationItem items = {kAuthorizationRightExecute, 0, NULL, 0};
-		AuthorizationRights auth={1, &items};
-		AuthorizationFlags flags=
-			kAuthorizationFlagDefaults 
-			| kAuthorizationFlagInteractionAllowed  
-			| kAuthorizationFlagExtendRights 
-			;
-		AuthorizationItem envItems = {kAuthorizationEnvironmentPrompt, sizeof(prompt), prompt, 0};
-		AuthorizationEnvironment env = {1, &envItems};
-
-		status=AuthorizationCreate(&auth, &env,flags, &authRef); 
-		if (status == errAuthorizationCanceled) {
-			fputs("Auth Canceled\n",stderr);
-			return status;
-		} else if (status == errAuthorizationDenied) {
-			fputs("Auth Denied\n",stderr);
-			return status;
-		} else if (status != errAuthorizationSuccess) {
-			fputs("Can't Create\n",stderr);
-			return status;
-		}
-	}
-	{
-		FILE* pipe=NULL;
-		char readBuffer[15];
-		status = AuthorizationExecuteWithPrivileges(authRef,"/usr/bin/whoami", kAuthorizationFlagDefaults,NULL, &pipe);
-		if (status == errAuthorizationSuccess){
-			int bytesRead = read(fileno(pipe), readBuffer, sizeof(readBuffer));
-			readBuffer[14]='\0';
-			fputs(readBuffer,stdout);
-		} else if (status == errAuthorizationToolExecuteFailure 
-				|| status == errAuthorizationToolEnvironmentError) {
-			fputs("Execution Failed\n", stderr);
-			return status;
-		} else {
-			fputs("No Auth\n",stderr);
-			return status;
-		}
-	}
-	AuthorizationFree(authRef, kAuthorizationFlagDefaults);
-	return 0;
+#include <Security/Authorization.h>
+#include <Security/AuthorizationTags.h>
+ 
+int read (long,StringPtr,int);
+int write (long,StringPtr,int);
+ 
+int main() {
+ 
+    OSStatus myStatus;
+    AuthorizationFlags myFlags = kAuthorizationFlagDefaults;              // 1
+    AuthorizationRef myAuthorizationRef;                                  // 2
+ 
+    myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment,  // 3
+                myFlags, &myAuthorizationRef);
+    if (myStatus != errAuthorizationSuccess)
+        return myStatus;
+ 
+    do
+    {
+        {
+            AuthorizationItem myItems = {kAuthorizationRightExecute, 0,    // 4
+                    NULL, 0};
+            AuthorizationRights myRights = {1, &myItems};                  // 5
+ 
+            myFlags = kAuthorizationFlagDefaults |                         // 6
+                    kAuthorizationFlagInteractionAllowed |
+                    kAuthorizationFlagPreAuthorize |
+                    kAuthorizationFlagExtendRights;
+            myStatus = AuthorizationCopyRights (myAuthorizationRef,       // 7
+                                         &myRights, NULL, myFlags, NULL );
+        }
+ 
+        if (myStatus != errAuthorizationSuccess) break;
+ 
+        {
+            char myToolPath[] = "/usr/bin/id";
+            char *myArguments[] = { "-un", NULL };
+            FILE *myCommunicationsPipe = NULL;
+            char myReadBuffer[128];
+ 
+            myFlags = kAuthorizationFlagDefaults;                          // 8
+            myStatus = AuthorizationExecuteWithPrivileges                  // 9
+                    (myAuthorizationRef, myToolPath, myFlags, myArguments,
+                    &myCommunicationsPipe);
+ 
+            if (myStatus == errAuthorizationSuccess)
+                for(;;)
+                {
+                    int bytesRead = read (fileno (myCommunicationsPipe),
+                            myReadBuffer, sizeof (myReadBuffer));
+                    if (bytesRead < 1) break;
+                write (fileno (stdout), myReadBuffer, bytesRead);
+                }
+        }
+    } while (0);
+ 
+    AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);    // 10
+ 
+    if (myStatus) printf("Status: %ld\n", myStatus);
+    return myStatus;
 }
