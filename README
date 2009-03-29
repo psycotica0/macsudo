@@ -3,5 +3,10 @@ This program is a graphical sudo for MacOSX.
 You give it a command to run and it brings up the system password box.
 When an administrator's password is typed in the command is run as root.
 
-It's not done yet.
-There are a couple of features I'd like to implement first.
+A sample running is 
+MacSudo -p MyApp rm -rf tempDir
+
+Which would put "On behalf of MyApp, MacSudo requires you to type in your password" into the authentication box that comes up.
+Upon a successful authentication, it would run "rm -rf tempDir" as root.
+
+If the -p option isn't given then it will leave out the "On behalf on ___, " and just mention MacSudo.
