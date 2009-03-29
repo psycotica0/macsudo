@@ -88,6 +88,9 @@ int main(int argc, char **argv) {
 	OSStatus myStatus;
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
+
+	//This will hold the command to be executed as root
+	char * command;
  
 	if (argc <= 1) {
 		fputs("No command given.\n",stderr);
@@ -96,6 +99,9 @@ int main(int argc, char **argv) {
 
 	myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
 	if (myStatus != errAuthorizationSuccess) return myStatus;
+
+	//Put the command together
+	command=argvJoin(argv+1);
  
 	do {
 		{
@@ -113,7 +119,7 @@ int main(int argc, char **argv) {
  
 		{
 			char myToolPath[] = "/bin/sh";
-			char *myArguments[] = {"-c", argv[1], NULL };
+			char *myArguments[] = {"-c", command, NULL };
 			FILE *myCommunicationsPipe = NULL;
 			char myReadBuffer[128];
  
@@ -131,6 +137,7 @@ int main(int argc, char **argv) {
 	} while (0);
  
 	AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
+	free(command);
 
 	if (myStatus) printf("Status: %ld\n", myStatus);
 	return myStatus;
