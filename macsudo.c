@@ -2,6 +2,7 @@
 #include <Security/AuthorizationTags.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
 This function counts the number of times a certain character occurs in a string
@@ -88,20 +89,48 @@ int main(int argc, char **argv) {
 	OSStatus myStatus;
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
+	AuthorizationItem envItem={kAuthorizationEnvironmentPrompt, 0, NULL, 0};
+	AuthorizationEnvironment env={1, &envItem};
 
 	/* This will hold the command to be executed as root */
 	char * command;
+	/* This will hold the flag for getopt */
+	char getOptFlag;
+
+	while ((getOptFlag=getopt(argc,argv, "p:")) != -1) {
+		switch (getOptFlag) {
+			case 'p':
+				/* This function is not standard */
+				/* Also, it's kind of a hack... */
+				asprintf((char **)&envItem.value, "On behalf of %s, ", optarg);
+				envItem.valueLength = (sizeof(char)*strlen((char*)envItem.value)) + 1;
+				break;
+		}
+	}
  
-	if (argc <= 1) {
+	if (argc <= optind) {
 		fputs("No command given.\n",stderr);
+		if (envItem.value != NULL) {
+			free(envItem.value);
+		}
 		return EXIT_FAILURE;
 	}
 
-	myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
-	if (myStatus != errAuthorizationSuccess) return myStatus;
+	if (envItem.value == NULL) {
+		myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
+	} else {
+		myStatus = AuthorizationCreate(NULL, &env, myFlags, &myAuthorizationRef);
+	}
+
+	if (myStatus != errAuthorizationSuccess) {
+		if (envItem.value != NULL) {
+			free(envItem.value);
+		}
+		return myStatus;
+	}
 
 	/* Put the command together */
-	command=argvJoin(argv+1);
+	command=argvJoin(argv+optind);
  
 	do {
 		{
@@ -112,7 +141,11 @@ int main(int argc, char **argv) {
 				kAuthorizationFlagInteractionAllowed |
 				kAuthorizationFlagPreAuthorize |
 				kAuthorizationFlagExtendRights;
-			myStatus = AuthorizationCopyRights (myAuthorizationRef, &myRights, NULL, myFlags, NULL );
+			if (envItem.value == NULL) {
+				myStatus = AuthorizationCopyRights (myAuthorizationRef, &myRights, NULL, myFlags, NULL );
+			} else {
+				myStatus = AuthorizationCopyRights (myAuthorizationRef, &myRights, &env, myFlags, NULL );
+			}
 		}
  
 		if (myStatus != errAuthorizationSuccess) break;
@@ -138,6 +171,9 @@ int main(int argc, char **argv) {
  
 	AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
 	free(command);
+	if (envItem.value != NULL) {
+		free(envItem.value);
+	}
 
 	if (myStatus) printf("Status: %ld\n", myStatus);
 	return myStatus;
