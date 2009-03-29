@@ -80,6 +80,7 @@ char* argvJoin(char** input) {
 		output[k+1]=' ';
 		k += 2;
 	}
+	output[k]='\0';
 
 	return output;
 }
