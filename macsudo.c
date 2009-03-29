@@ -84,6 +84,13 @@ char* argvJoin(char** input) {
 	return output;
 }
 
+void usage() {
+	fputs("This command takes in another command and attempts to authorize it to run with super user permissions\n", stderr);
+	fputs("Usage: MacSudo [-p CommandName] command\n", stderr);
+	fputs("Where:\n", stderr);
+	fputs(" -p Gives the name MacSudo should display is requesting permission\n", stderr);
+}
+
 int main(int argc, char **argv) {
  
 	OSStatus myStatus;
@@ -97,7 +104,7 @@ int main(int argc, char **argv) {
 	/* This will hold the flag for getopt */
 	char getOptFlag;
 
-	while ((getOptFlag=getopt(argc,argv, "p:")) != -1) {
+	while ((getOptFlag=getopt(argc,argv, "hp:")) != -1) {
 		switch (getOptFlag) {
 			case 'p':
 				/* This function is not standard */
@@ -105,6 +112,13 @@ int main(int argc, char **argv) {
 				asprintf((char **)&envItem.value, "On behalf of %s, ", optarg);
 				envItem.valueLength = (sizeof(char)*strlen((char*)envItem.value)) + 1;
 				break;
+			case 'h':
+			default:
+				usage();
+				if (envItem.value != NULL) {
+					free(envItem.value);
+				}
+				return EXIT_FAILURE;
 		}
 	}
  
