@@ -37,33 +37,33 @@ char* argvJoin(char** input) {
 	char* output;
 	int i,j,k;
 
-	//Find the required size of the output
+	/* Find the required size of the output */
 	for(i=0; input[i]!=NULL; i++) {
-		//Add the size of the string
+		/* Add the size of the string */
 		requiredSize += strlen(input[i]);
-		//Add one for the space we'll be using to join them
+		/* Add one for the space we'll be using to join them */
 		requiredSize += 1;
-		//Add 2 for the quotes that will wrap each entry.
+		/* Add 2 for the quotes that will wrap each entry. */
 		requiredSize += 2;
-		//Add 1 for every quote character that shows up (because they'll need to be escaped)
+		/* Add 1 for every quote character that shows up (because they'll need to be escaped) */
 		requiredSize += charCount(input[i],'"');
 	}
 
-	//Account for the null character
+	/* Account for the null character */
 	requiredSize += 1;
 
-	//Allocate the string
+	/* Allocate the string */
 	output=malloc(sizeof(char) * requiredSize);
 	if (output == NULL) {
 		return NULL;
 	}
-	//This variable should keep track of where in output we are
+	/* This variable should keep track of where in output we are */
 	k=0;
 	output[0]=NULL;
 
-	//Now, fill in the values
+	/* Now, fill in the values */
 	for(i=0; input[i]!=NULL; i++) {
-		//Put in the first quote
+		/* Put in the first quote */
 		output[k]='"';
 		k++;
 		for(j=0; input[i][j]!=NULL; j++,k++) {
@@ -73,23 +73,23 @@ char* argvJoin(char** input) {
 			}
 			output[k]=input[i][j];
 		}
-		//Put in the ending quote
+		/* Put in the ending quote */
 		output[k]='"';
-		//And space
+		/* And space */
 		output[k+1]=' ';
 		k += 2;
 	}
 
 	return output;
 }
- 
+
 int main(int argc, char **argv) {
  
 	OSStatus myStatus;
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
 
-	//This will hold the command to be executed as root
+	/* This will hold the command to be executed as root */
 	char * command;
  
 	if (argc <= 1) {
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 	myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
 	if (myStatus != errAuthorizationSuccess) return myStatus;
 
-	//Put the command together
+	/* Put the command together */
 	command=argvJoin(argv+1);
  
 	do {
