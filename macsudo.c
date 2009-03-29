@@ -24,6 +24,10 @@ int charCount(char* string, char toCount) {
 /*
 This function takes in an array of strings and joins them all into a single string.
 
+It's a little more specialized than that.
+It wraps each entry in quotes, to protect the word boundries when being passed through as options as another command
+It also has to therefore escape each " it finds.
+
 It assumes the input char is argv-like, in that the last element in it is NULL
 It allocates the space it needs.
 This should be freed manually by the caller.
@@ -31,12 +35,18 @@ This should be freed manually by the caller.
 char* argvJoin(char** input) {
 	int requiredSize=0;
 	char* output;
-	int i;
+	int i,j,k;
 
 	//Find the required size of the output
 	for(i=0; input[i]!=NULL; i++) {
-		//Add the size of the string plus 1 for the space we'll be using to join them.
-		requiredSize += strlen(input[i]) + 1;
+		//Add the size of the string
+		requiredSize += strlen(input[i]);
+		//Add one for the space we'll be using to join them
+		requiredSize += 1;
+		//Add 2 for the quotes that will wrap each entry.
+		requiredSize += 2;
+		//Add 1 for every quote character that shows up (because they'll need to be escaped)
+		requiredSize += charCount(input[i],'"');
 	}
 
 	//Account for the null character
@@ -47,12 +57,27 @@ char* argvJoin(char** input) {
 	if (output == NULL) {
 		return NULL;
 	}
+	//This variable should keep track of where in output we are
+	k=0;
 	output[0]=NULL;
 
 	//Now, fill in the values
 	for(i=0; input[i]!=NULL; i++) {
-		strcat(output, input[i]);
-		strcat(output, " ");
+		//Put in the first quote
+		output[k]='"';
+		k++;
+		for(j=0; input[i][j]!=NULL; j++,k++) {
+			if (input[i][j] == '"') {
+				output[k]='\\';
+				k++;
+			}
+			output[k]=input[i][j];
+		}
+		//Put in the ending quote
+		output[k]='"';
+		//And space
+		output[k+1]=' ';
+		k += 2;
 	}
 
 	return output;
