@@ -92,6 +92,30 @@ void usage() {
 	fputs(" -p Gives the name MacSudo should display is requesting permission\n", stderr);
 }
 
+/* 
+This function is intended to be called just before the program exits.
+It will print out more useful error message than just the status number.
+*/
+void outputError(int errorCode) {
+	switch (errorCode) {
+		case errAuthorizationSuccess:
+			/* Do nothing, successful */
+			break;
+		case errAuthorizationDenied:
+			fputs("Authorization Denied\n", stderr);
+			break;
+		case errAuthorizationCanceled:
+			fputs("User Canceled Authorization\n", stderr);
+			break;
+		case errAuthorizationToolExecuteFailure:
+		case errAuthorizationToolEnvironmentError:
+			fputs("Error executing given command\n", stderr);
+			break;
+		default:
+			fprintf(stderr, "Unexpected Error (%ld)\n", errorCode);
+	}
+}
+
 int main(int argc, char **argv) {
  
 	OSStatus myStatus;
@@ -141,6 +165,7 @@ int main(int argc, char **argv) {
 		if (envItem.value != NULL) {
 			free(envItem.value);
 		}
+		outputError(myStatus);
 		return myStatus;
 	}
 
@@ -190,6 +215,6 @@ int main(int argc, char **argv) {
 		free(envItem.value);
 	}
 
-	if (myStatus) printf("Status: %ld\n", myStatus);
+	outputError(myStatus);
 	return myStatus;
 }
