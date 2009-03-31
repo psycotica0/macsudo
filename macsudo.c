@@ -8,8 +8,10 @@
 This function counts the number of times a certain character occurs in a string
 */
 int charCount(char* string, char toCount) {
-	int num;
-	for(num=0, string--; (string=strchr(string+1, toCount)) != NULL; num++);
+	int num=0;
+	while(*string)
+		if(*string++ == toCount)
+			num++;
 	return num;
 }
 
