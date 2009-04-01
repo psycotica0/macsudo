@@ -105,7 +105,7 @@ void outputError(int errorCode) {
 			fputs("Error executing given command\n", stderr);
 			break;
 		default:
-			fprintf(stderr, "Unexpected Error (%ld)\n", errorCode);
+			fprintf(stderr, "Unexpected Error (%d)\n", errorCode);
 	}
 }
 
@@ -115,12 +115,15 @@ int main(int argc, char **argv) {
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
 	AuthorizationItem envItem={kAuthorizationEnvironmentPrompt, 0, NULL, 0};
-	AuthorizationEnvironment env={1, &envItem};
+	AuthorizationEnvironment env;	/*initialized later, stupid C90 rules*/
 
 	/* This will hold the command to be executed as root */
 	char * command;
 	/* This will hold the flag for getopt */
 	char getOptFlag;
+
+	env.count=1;
+	env.items=&envItem;
 
 	while ((getOptFlag=getopt(argc,argv, "hp:")) != -1) {
 		switch (getOptFlag) {
@@ -168,7 +171,10 @@ int main(int argc, char **argv) {
 	do {
 		{
 			AuthorizationItem myItems = {kAuthorizationRightExecute, 0, NULL, 0};
-			AuthorizationRights myRights = {1, &myItems};
+			AuthorizationRights myRights;
+
+			myRights.count=1;
+			myRights.items=&myItems;
  
 			myFlags = kAuthorizationFlagDefaults |
 				kAuthorizationFlagInteractionAllowed |
@@ -185,9 +191,11 @@ int main(int argc, char **argv) {
  
 		{
 			char myToolPath[] = "/bin/sh";
-			char *myArguments[] = {"-c", command, NULL };
+			char *myArguments[] = {"-c", NULL, NULL };
 			FILE *myCommunicationsPipe = NULL;
 			char myReadBuffer[128];
+
+			myArguments[1]=command;
  
 			myFlags = kAuthorizationFlagDefaults;
 			myStatus = AuthorizationExecuteWithPrivileges(myAuthorizationRef, myToolPath, myFlags, myArguments, &myCommunicationsPipe);
