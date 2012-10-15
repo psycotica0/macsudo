@@ -80,9 +80,10 @@ char* argvJoin(char** input) {
 
 void usage() {
 	fputs("This command takes in another command and attempts to authorize it to run with super user permissions\n", stderr);
-	fputs("Usage: MacSudo [-p CommandName] command\n", stderr);
+	fputs("Usage: MacSudo [-p CommandName] [-i IconPath] command\n", stderr);
 	fputs("Where:\n", stderr);
 	fputs(" -p Gives the name MacSudo should display is requesting permission\n", stderr);
+	fputs(" -i Gives the a path to an icon to display\n", stderr);
 }
 
 /* 
@@ -114,7 +115,7 @@ int main(int argc, char **argv) {
 	OSStatus myStatus;
 	AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
 	AuthorizationRef myAuthorizationRef;
-	AuthorizationItem envItem={kAuthorizationEnvironmentPrompt, 0, NULL, 0};
+	AuthorizationItem envItem[2];
 	AuthorizationEnvironment env;	/*initialized later, stupid C90 rules*/
 
 	/* This will hold the command to be executed as root */
@@ -122,45 +123,44 @@ int main(int argc, char **argv) {
 	/* This will hold the flag for getopt */
 	char getOptFlag;
 
-	env.count=1;
-	env.items=&envItem;
+	env.count=0;
+	env.items=&(envItem[0]);
 
-	while ((getOptFlag=getopt(argc,argv, "hp:")) != -1) {
+	while ((getOptFlag=getopt(argc,argv, "hp:i:")) != -1) {
 		switch (getOptFlag) {
 			case 'p':
+				if (env.count >= 2) break;
+				envItem[env.count].name = kAuthorizationEnvironmentPrompt;
 				/* This function is not standard */
 				/* Also, it's kind of a hack... */
-				asprintf((char **)&envItem.value, "On behalf of %s, ", optarg);
-				envItem.valueLength = (sizeof(char)*strlen((char*)envItem.value)) + 1;
+				asprintf((char **)&envItem[env.count].value, "On behalf of %s, ", optarg);
+				envItem[env.count].valueLength = (sizeof(char)*strlen((char*)envItem[env.count].value)) + 1;
+				envItem[env.count].flags = 0;
+				env.count++;
+				break;
+			case 'i':
+				if (env.count >= 2) break;
+				envItem[env.count].name = kAuthorizationEnvironmentIcon;
+				envItem[env.count].value = strdup(optarg);
+				envItem[env.count].valueLength = (sizeof(char)*strlen((char*)envItem[env.count].value)) + 1;
+				envItem[env.count].flags = 0;
+				env.count++;
 				break;
 			case 'h':
 			default:
 				usage();
-				if (envItem.value != NULL) {
-					free(envItem.value);
-				}
 				return EXIT_FAILURE;
 		}
 	}
  
 	if (argc <= optind) {
 		fputs("No command given.\n",stderr);
-		if (envItem.value != NULL) {
-			free(envItem.value);
-		}
 		return EXIT_FAILURE;
 	}
 
-	if (envItem.value == NULL) {
-		myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, myFlags, &myAuthorizationRef);
-	} else {
-		myStatus = AuthorizationCreate(NULL, &env, myFlags, &myAuthorizationRef);
-	}
+	myStatus = AuthorizationCreate(NULL, &env, myFlags, &myAuthorizationRef);
 
 	if (myStatus != errAuthorizationSuccess) {
-		if (envItem.value != NULL) {
-			free(envItem.value);
-		}
 		outputError(myStatus);
 		return myStatus;
 	}
@@ -180,11 +180,7 @@ int main(int argc, char **argv) {
 				kAuthorizationFlagInteractionAllowed |
 				kAuthorizationFlagPreAuthorize |
 				kAuthorizationFlagExtendRights;
-			if (envItem.value == NULL) {
-				myStatus = AuthorizationCopyRights (myAuthorizationRef, &myRights, NULL, myFlags, NULL );
-			} else {
 				myStatus = AuthorizationCopyRights (myAuthorizationRef, &myRights, &env, myFlags, NULL );
-			}
 		}
  
 		if (myStatus != errAuthorizationSuccess) break;
@@ -212,9 +208,6 @@ int main(int argc, char **argv) {
  
 	AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
 	free(command);
-	if (envItem.value != NULL) {
-		free(envItem.value);
-	}
 
 	outputError(myStatus);
 	return myStatus;
