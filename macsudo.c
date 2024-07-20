@@ -53,14 +53,14 @@ char* argvJoin(char** input) {
 	}
 	/* This variable should keep track of where in output we are */
 	k=0;
-	output[0]=NULL;
+	output[0]='\0';
 
 	/* Now, fill in the values */
 	for(i=0; input[i]!=NULL; i++) {
 		/* Put in the first quote */
 		output[k]='"';
 		k++;
-		for(j=0; input[i][j]!=NULL; j++,k++) {
+		for(j=0; input[i][j]!='\0'; j++,k++) {
 			if (input[i][j] == '"') {
 				output[k]='\\';
 				k++;
@@ -78,7 +78,7 @@ char* argvJoin(char** input) {
 	return output;
 }
 
-void usage() {
+void usage(void) {
 	fputs("This command takes in another command and attempts to authorize it to run with super user permissions\n", stderr);
 	fputs("Usage: MacSudo [-p CommandName] [-i IconPath] command\n", stderr);
 	fputs("Where:\n", stderr);
